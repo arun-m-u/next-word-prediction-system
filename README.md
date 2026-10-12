@@ -119,120 +119,25 @@ python app/main.py
 - Interactive API docs: <http://localhost:8000/docs>
 - Health: <http://localhost:8000/health>
 
----
+## ⚠️ Challenges Faced and Solutions
 
-## 3. API guide
+During the development of this Next Word Prediction System, I encountered several challenges and explored different approaches to improve prediction quality.
 
-### `POST /predict`
-Predict the top-k next words.
+### 1. Lower Accuracy of RNN, LSTM, and GRU Models
+- **Challenge:** The SimpleRNN, LSTM, and GRU models produced lower prediction accuracy than expected.
+- **Solution:** I explored a pretrained DistilGPT-2 model to generate more contextually relevant next-word predictions.
 
-**Request**
-```json
-{ "text": "the stock market", "top_k": 5 }
-```
-**Response**
-```json
-{
-  "input": "the stock market",
-  "predictions": [
-    { "word": "rose", "probability": 0.41 },
-    { "word": "fell", "probability": 0.22 }
-  ]
-}
-```
+### 2. Understanding Long-Range Dependencies
+- **Challenge:** Recurrent models sometimes struggled to capture relationships between words that were far apart in a sentence.
+- **Solution:** I explored DistilGPT-2, which uses the Transformer architecture and self-attention to understand contextual relationships.
 
-### `POST /generate`
-Generate a multi-word continuation.
+### 3. Comparing Different Model Architectures
+- **Challenge:** Comparing recurrent neural networks with a pretrained Transformer model required considering their different architectures and prediction approaches.
+- **Solution:** I explored the models' prediction outputs to understand their strengths and limitations.
 
-**Request**
-```json
-{ "text": "the government has decided to", "num_words": 14, "temperature": 0.7 }
-```
-**Response**
-```json
-{
-  "input": "the government has decided to",
-  "generated_text": "the government has decided to raise fuel prices ...",
-  "num_words": 14,
-  "temperature": 0.7
-}
-```
+### 4. Generating Contextually Relevant Predictions
+- **Challenge:** Producing relevant next-word suggestions for different input sentences was challenging.
+- **Solution:** I used a pretrained language model approach to explore context-aware text generation.
 
-### `GET /health`
-```json
-{ "status": "ok", "model_loaded": true, "context_length": 15, "vocab_size": 5001 }
-```
-
-**curl example**
-```bash
-curl -X POST http://localhost:8000/predict \
-  -H "Content-Type: application/json" \
-  -d '{"text":"the stock market","top_k":5}'
-```
-
-Validation is automatic: empty/whitespace text, `top_k` out of `[1,20]`,
-`num_words` out of `[1,50]`, or `temperature` out of `[0,2]` return `422`.
-
----
-
-## 4. Model artifacts
-
-- **Save model:** `model.save("saved_models/next_word_lstm_best.keras")`
-  (or let `ModelCheckpoint` write it during training).
-- **Save tokenizer:** `pickle.dump(tokenizer, open("saved_models/tokenizer.pkl","wb"))`.
-- **Save vocabulary:** the vocabulary lives inside the tokenizer
-  (`word_index` / `index_word`), so persisting the tokenizer persists the vocab.
-- **Save config:** `config.json` stores `context_length` so preprocessing is
-  reproduced exactly (if absent, it is inferred from the model's input shape).
-- **Load:** all three are loaded once at startup and cached
-  (`app/models/model_loader.py`).
-
----
-
-## 5. Testing
-
-```bash
-pytest
-```
-
-The suite runs **without TensorFlow or real artifacts** by injecting fake
-model/tokenizer objects: preprocessing, predictor logic (top-k ordering, greedy
-determinism, OOV stop, seeded sampling), API responses, and input validation.
-
----
-
-## 6. Deployment
-
-### Docker (local or any host)
-```bash
-docker build -t next-word-predictor .
-docker run -p 8000:8000 next-word-predictor
-```
-The image reads `$PORT` if set (defaults to 8000).
-
-### Render
-Push to a Git repo and create a **Web Service** (uses `render.yaml`), or set:
-- Build: `pip install -r requirements.txt`
-- Start: `uvicorn app.main:app --host 0.0.0.0 --port $PORT`
-
-### Railway
-Railway detects the `Procfile`:
-```
-web: uvicorn app.main:app --host 0.0.0.0 --port $PORT
-```
-Add the artifacts to `saved_models/` (or mount a volume / object storage).
-
-### Notes for all hosts
-- TensorFlow images are large; prefer a plan with adequate memory.
-- Model + tokenizer are loaded once at startup (cached singleton).
-- Configure paths via `MODEL_PATH`, `TOKENIZER_PATH`, `CONFIG_PATH` env vars.
-
----
-
-## Why FastAPI (vs Flask)?
-
-See `docs/ARCHITECTURE_REVIEW.md`. In short: built-in Pydantic validation
-(the assessment requires input validation), automatic OpenAPI docs, async I/O,
-and first-class typing make FastAPI the better fit here. A Flask port is
-straightforward if required (swap the router layer; the service/model/utils
-modules are framework-agnostic).
+### Key Learning
+This project helped me understand the differences between recurrent neural networks and Transformer-based language models, and how pretrained models such as DistilGPT-2 can be used for next-word prediction.
